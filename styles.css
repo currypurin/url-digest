@@ -260,6 +260,26 @@ textarea:focus {
   opacity: 0.55;
 }
 
+.new-share-link {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.reader-mode .new-share-link {
+  display: inline-flex;
+}
+
+.reader-mode .creator-panel {
+  display: none;
+}
+
+.reader-mode .layout {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(920px, calc(100% - 32px));
+}
+
 .ghost-button {
   border-color: transparent;
   background: var(--surface-soft);

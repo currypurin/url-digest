@@ -37,8 +37,13 @@ document.addEventListener("DOMContentLoaded", () => {
 async function initialize() {
   const loaded = await loadStateFromUrl();
   if (!loaded) {
+    setReaderMode(false);
     renderCurrentInputs("フォーム入力、またはURL内の共有データから表示します。");
   }
+
+  window.addEventListener("hashchange", () => {
+    void loadStateFromUrl();
+  });
 
   elements.shareForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -81,9 +86,11 @@ async function loadStateFromUrl() {
       const payload = await decodePayload(data);
       const state = normalizePayload(payload);
       applyStateToForm(state);
+      setReaderMode(true);
       renderState(state, "#data= から復元したニュースを表示中です。");
       return true;
     } catch (error) {
+      setReaderMode(false);
       showStatus(`URL内の共有データを復元できませんでした: ${error.message}`, true);
       renderCurrentInputs("共有データの復元に失敗しました。");
       return true;
@@ -93,11 +100,17 @@ async function loadStateFromUrl() {
   const legacyState = parseLegacyQuery(window.location.search);
   if (legacyState) {
     applyStateToForm(legacyState);
+    setReaderMode(true);
     renderState(legacyState, "互換URL形式から復元したニュースを表示中です。");
     return true;
   }
 
+  setReaderMode(false);
   return false;
+}
+
+function setReaderMode(enabled) {
+  document.body.classList.toggle("reader-mode", enabled);
 }
 
 function normalizePayload(payload) {
