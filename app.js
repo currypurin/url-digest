@@ -189,7 +189,7 @@ function renderState(state, notice) {
   const title = state.title || DEFAULT_TITLE;
   const description = state.description || DEFAULT_DESCRIPTION;
 
-  document.title = title;
+  updateDocumentMetadata(title, description);
   elements.pageTitle.textContent = title;
   elements.pageDescription.textContent = description;
   elements.itemCount.textContent = String(countItems(data.sections));
@@ -197,6 +197,22 @@ function renderState(state, notice) {
 
   replaceChildren(elements.newsContainer, renderNewsSections(data.sections));
   hydrateTweets();
+}
+
+function updateDocumentMetadata(title, description) {
+  document.title = title;
+  setMetaContent('meta[name="description"]', description);
+  setMetaContent('meta[property="og:title"]', title);
+  setMetaContent('meta[property="og:description"]', description);
+  setMetaContent('meta[name="twitter:title"]', title);
+  setMetaContent('meta[name="twitter:description"]', description);
+}
+
+function setMetaContent(selector, content) {
+  const meta = document.querySelector(selector);
+  if (meta) {
+    meta.setAttribute("content", content);
+  }
 }
 
 function parseMarkdownNews(markdown) {
