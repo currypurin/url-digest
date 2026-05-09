@@ -10,6 +10,50 @@ https://www.figure.ai/news/helix-02-bedroom-tidy
 # その他
 ### CodexのGoals機能により、ARC-AGI-3で61%のスコア
 https://x.com/patience_cave/status/2052772581888156128?s=20`;
+const PRESETS = {
+  "2026-05-04-week": {
+    title: "週間AIニュースランキング 2026年5月4日週",
+    description:
+      "2026年5月4日から5月9日までのAIニュースを、X投稿・公式リンク・配信用インフォグラフィックつきでまとめています。",
+    markdown: `# 5月4日
+### Hermes Agentの最新バージョンv0.12.0で、Kanbanボードを使ったマルチエージェント機能が追加
+![Hermes Agent v0.12.0](./assets/2026-05-04-week/01-hermes-agent-v0120.png)
+https://x.com/NousResearch/status/2050997692977844324
+
+# 5月6日
+### SubQの紹介 - LLM知能における画期的なブレークスルー。
+![SubQ](./assets/2026-05-04-week/02-subq.png)
+https://x.com/alex_whedon/status/2051663268704636937?s=20
+https://subq.ai/
+https://subq.ai/introducing-subq
+https://subq.ai/how-ssa-makes-long-context-practical
+
+# 5月7日
+### AnthropicとSpaceXの連携
+![AnthropicとSpaceXの連携](./assets/2026-05-04-week/03-anthropic-spacex-claude-code.png)
+https://x.com/claudeai/status/2052060691893227611?s=20
+
+### codex-pet-limit-rings
+![codex-pet-limit-rings](./assets/2026-05-04-week/04-codex-pet-limit-rings.png)
+https://github.com/petergpt/codex-pet-limit-rings
+
+# 5月8日
+### CodexのChromeアプリ
+![CodexのChromeアプリ](./assets/2026-05-04-week/05-codex-chrome-app.png)
+https://x.com/OpenAI/status/2052480800004956323?s=20
+https://x.com/OpenAIDevs/status/2052481136971125158
+
+### OpenAIのAPIに、GPT-Realtime-2が登場。
+![GPT-Realtime-2](./assets/2026-05-04-week/06-gpt-realtime-2.png)
+https://x.com/OpenAI/status/2052438194625593804
+
+# 5月9日
+### Helix-02, 掃除とベットメイキングを2分以内に実行させることを教えました。
+![Helix-02](./assets/2026-05-04-week/07-helix-02-bedroom-tidy.png)
+https://x.com/Figure_robot/status/2052770982214172892
+https://www.figure.ai/news/helix-02-bedroom-tidy`,
+  },
+};
 
 const elements = {
   titleInput: document.querySelector("#titleInput"),
@@ -97,6 +141,14 @@ async function loadStateFromUrl() {
     }
   }
 
+  const presetState = parsePresetQuery(window.location.search);
+  if (presetState) {
+    applyStateToForm(presetState);
+    setReaderMode(true);
+    renderState(presetState, "プリセットから復元したニュースを表示中です。");
+    return true;
+  }
+
   const legacyState = parseLegacyQuery(window.location.search);
   if (legacyState) {
     applyStateToForm(legacyState);
@@ -107,6 +159,19 @@ async function loadStateFromUrl() {
 
   setReaderMode(false);
   return false;
+}
+
+function parsePresetQuery(search) {
+  if (!search || search === "?") {
+    return null;
+  }
+
+  const preset = new URLSearchParams(search).get("preset");
+  if (!preset || !PRESETS[preset]) {
+    return null;
+  }
+
+  return PRESETS[preset];
 }
 
 function setReaderMode(enabled) {
@@ -251,6 +316,22 @@ function parseMarkdownNews(markdown) {
       continue;
     }
 
+    const markdownImage = parseMarkdownImage(line);
+    if (markdownImage) {
+      const section = ensureSection();
+      if (currentItem && !currentItem.implicit) {
+        currentItem.urls.push(markdownImage.url);
+      } else {
+        section.items.push({
+          title: markdownImage.alt,
+          urls: [markdownImage.url],
+          implicit: true,
+        });
+        currentItem = null;
+      }
+      continue;
+    }
+
     const urls = extractUrls(line);
     if (urls.length > 0) {
       const section = ensureSection();
@@ -272,7 +353,7 @@ function parseMarkdownNews(markdown) {
         items: section.items
           .map((item) => ({
             title: item.title,
-            urls: Array.from(new Set(item.urls.map(normalizeUrl).filter(Boolean))),
+            urls: Array.from(new Set(item.urls.map(normalizeResourceUrl).filter(Boolean))),
           }))
           .filter((item) => item.title || item.urls.length > 0),
       }))
@@ -318,11 +399,35 @@ function renderNewsItem(item) {
   const list = document.createElement("div");
   list.className = "url-list";
   for (const url of item.urls) {
-    list.append(isXStatusUrl(url) ? renderTweet(url) : renderLinkCard(url));
+    if (isImageResource(url)) {
+      list.append(renderImageCard(url, item.title));
+    } else {
+      list.append(isXStatusUrl(url) ? renderTweet(url) : renderLinkCard(url));
+    }
   }
   article.append(list);
 
   return article;
+}
+
+function renderImageCard(url, altText) {
+  const figure = document.createElement("figure");
+  figure.className = "image-card";
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+
+  const image = document.createElement("img");
+  image.src = url;
+  image.alt = altText || "ニュース画像";
+  image.loading = "lazy";
+  image.decoding = "async";
+
+  link.append(image);
+  figure.append(link);
+  return figure;
 }
 
 function renderTweet(url) {
@@ -353,7 +458,7 @@ function renderTweet(url) {
 }
 
 function renderLinkCard(url) {
-  const parsed = new URL(url);
+  const parsed = new URL(url, window.location.href);
   const card = document.createElement("a");
   card.className = "link-card";
   card.href = url;
@@ -509,6 +614,23 @@ function extractUrls(line) {
   return matches.map(stripTrailingUrlPunctuation).map(normalizeUrl).filter(Boolean);
 }
 
+function parseMarkdownImage(line) {
+  const match = line.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/);
+  if (!match) {
+    return null;
+  }
+
+  const url = normalizeResourceUrl(stripTrailingUrlPunctuation(match[2]));
+  if (!url || !isImageResource(url)) {
+    return null;
+  }
+
+  return {
+    alt: match[1].trim(),
+    url,
+  };
+}
+
 function stripTrailingUrlPunctuation(value) {
   return value.replace(/[。、，,.)\]]+$/g, "");
 }
@@ -536,6 +658,28 @@ function normalizeUrl(value) {
   } catch {
     return null;
   }
+}
+
+function normalizeResourceUrl(value) {
+  const normalized = normalizeUrl(value);
+  if (normalized) {
+    return normalized;
+  }
+
+  const trimmed = value?.trim();
+  if (!trimmed || !isImageResource(trimmed)) {
+    return null;
+  }
+
+  if (/^(?:\.{1,2}\/|\/|assets\/)[^\s<>"']+$/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return null;
+}
+
+function isImageResource(value) {
+  return /\.(?:png|jpe?g|webp|gif|avif)(?:[?#].*)?$/i.test(value || "");
 }
 
 function isXStatusUrl(value) {

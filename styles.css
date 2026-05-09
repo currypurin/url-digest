@@ -374,10 +374,27 @@ textarea:focus {
 }
 
 .link-card,
-.tweet-shell {
+.tweet-shell,
+.image-card {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fbfcfc;
+}
+
+.image-card {
+  margin: 0;
+  overflow: hidden;
+}
+
+.image-card a {
+  display: block;
+}
+
+.image-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
 }
 
 .link-card {

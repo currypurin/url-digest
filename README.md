@@ -29,3 +29,4 @@ https://x.com/patience_cave/status/2052772581888156128?s=20
 - 短縮互換: `https://USER.github.io/REPO/?https://x.com/user/status/123&https://example.com/article`
 
 X の投稿 URL は埋め込み表示し、埋め込みに失敗しても元リンクを残します。X 以外の URL は通常リンクカードとして表示します。
+画像 URL と Markdown 画像記法（`![説明](./assets/example.png)`）はニュース項目内に横幅いっぱいで表示します。
